@@ -3,8 +3,9 @@ from typing import Tuple, List
 
 Color = Tuple[int, int, int]
 
+mode = ""
 
-color_list = [(0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
+color_list = []
 
 def load_image(src: str) -> List[Color]:
     """
@@ -12,7 +13,8 @@ def load_image(src: str) -> List[Color]:
     The returned pixels do not have their alpha values!
     """
     image = Image.open(src)
-
+    global mode
+    mode = image.mode
     if image.width % 8 != 0:
         raise Exception("Invalid width")
     if image.height % 8 != 0:
@@ -23,6 +25,12 @@ def load_image(src: str) -> List[Color]:
 
 
     tiles = [extract_tile(image, x, y) for y in range(n_h) for x in range(n_w)]
+    global color_list
+    temp = []
+    for l in tiles:
+        temp += l
+    color_list = list(set(temp))
+    print(color_list)
     return tiles
 
 
@@ -32,7 +40,13 @@ def extract_tile(image: Image, x: int, y: int) -> List[Color]:
     The returned pixels do not have their alpha values!
     """
     pixels_with_alpha = [image.getpixel((i, j)) for j in range(y*8, y*8+8) for i in range(x*8, x*8+8)]
-    pixels = [(r, g, b) for (r, g, b, _) in pixels_with_alpha]
+
+    if (mode == 'RGBA'):
+        pixels = [(r, g, b) for (r, g, b, _) in pixels_with_alpha]
+    elif (mode == 'LA') :
+        pixels = [l for (l, _) in pixels_with_alpha]
+    else :
+        pixels = 0
     return pixels
 
 
@@ -95,10 +109,11 @@ def pretty_matrix_print(matrix: List[List]):
 
 
 if __name__ == "__main__":
-    src = "test.png"
+    src = "isaac1.png"
     out = "test.s"
 
     tiles = load_image(src)
+
     hex_str = []
     for tile in tiles: 
         l = pixels_to_id(tile)
