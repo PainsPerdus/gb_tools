@@ -11,6 +11,7 @@ def load_image(src: str) -> List[Color]:
     """
     Return a list of tiles
     The returned pixels do not have their alpha values!
+    Also updates the color_list palette to match the image
     """
     image = Image.open(src)
     if image.width % 8 != 0:
@@ -21,15 +22,14 @@ def load_image(src: str) -> List[Color]:
     n_w = image.width // 8
     n_h = image.height // 8
 
-
     tiles = [extract_tile(image, x, y) for y in range(n_h) for x in range(n_w)]
     global color_list
-    if (len(color_list) == 0):
-        temp = []
-        for l in tiles:
-            temp += l
-        color_list = list(set(temp))
-        print(color_list)
+    temp = []
+    temp = [j for i in tiles for j in i]
+    color_list = list(set(temp))
+    print(color_list)
+    if (len(color_list) > 4):
+        raise Exception("color palette too large for gameboy display")
     return tiles
 
 
@@ -108,23 +108,31 @@ def pretty_matrix_print(matrix: List[List]):
 
 
 if __name__ == "__main__":
-    src = "isaac.png"
-    out = "test.s"
+    with open("file_names.txt", "r") as ref:
+        file_names = ref.readlines()
 
-    tiles = load_image(src)
+    for file in file_names :
+        if (file[-1] == '\n'):
+            file = file[:-1]
+        src = "RAW\\" + file + ".png"
+        out = "SPRITE\\" + file + ".sprite"
 
-    hex_str = []
-    for tile in tiles: 
-        l = pixels_to_id(tile)
-        l2 = [id_to_bin(i) for i in l]
-        bin_matrix = build_matrix(l2, 8)
-        vertical_matrix = [line for pairs in bin_matrix for line in bin_to_lines(pairs)]
-        hex_lines = [line_to_hex(line) for line in vertical_matrix]
-        hex_str.append(".DB " + ",".join(hex_lines) + "\n")
+        print(src, "==>", out)
+
+        tiles = load_image(src)
+
+        hex_str = []
+        for tile in tiles: 
+            l = pixels_to_id(tile)
+            l2 = [id_to_bin(i) for i in l]
+            bin_matrix = build_matrix(l2, 8)
+            vertical_matrix = [line for pairs in bin_matrix for line in bin_to_lines(pairs)]
+            hex_lines = [line_to_hex(line) for line in vertical_matrix]
+            hex_str.append(".DB " + ",".join(hex_lines) + "\n")
     
-    with open(out, "w") as f:
-        for hex_s in hex_str:
-            f.write(hex_s)
-            print(hex_s.strip())
+        with open(out, "w") as f:
+            for hex_s in hex_str:
+                f.write(hex_s)
+                print(hex_s.strip())
 
 
